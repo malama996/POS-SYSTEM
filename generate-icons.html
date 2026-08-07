@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head><title>ShopPOS Icon Generator</title>
+<style>body{font-family:sans-serif;background:#0f172a;color:#f1f5f9;padding:30px;text-align:center}</style>
+</head>
+<body>
+<h2 style="color:#10b981">ShopPOS Icon Generator</h2>
+<p style="color:#94a3b8;margin:10px 0 24px">Download both icons, then put them in the <code>icons/</code> folder inside your shoppos folder</p>
+<canvas id="c192" width="192" height="192" style="display:none"></canvas>
+<canvas id="c512" width="512" height="512" style="display:none"></canvas>
+<canvas id="prev" width="192" height="192" style="border-radius:24px;box-shadow:0 8px 32px rgba(0,0,0,.5)"></canvas>
+<br><br>
+<div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+  <button onclick="dl('c192','icon-192.png')" style="padding:12px 24px;background:#10b981;color:#000;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer">⬇ icon-192.png</button>
+  <button onclick="dl('c512','icon-512.png')" style="padding:12px 24px;background:#10b981;color:#000;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer">⬇ icon-512.png</button>
+</div>
+<p style="color:#64748b;margin-top:20px;font-size:12px">After downloading: create an <code>icons/</code> folder inside your shoppos folder and put both files there.</p>
+<script>
+function drawIcon(c, sz) {
+  const ctx = c.getContext('2d');
+  const r = sz * 0.18;
+  // Background
+  ctx.fillStyle = '#0f172a';
+  ctx.beginPath(); ctx.roundRect(0,0,sz,sz,r); ctx.fill();
+  // Green circle
+  const cx=sz/2, cy=sz*0.42, cr=sz*0.27;
+  ctx.fillStyle = '#10b981';
+  ctx.beginPath(); ctx.arc(cx,cy,cr,0,Math.PI*2); ctx.fill();
+  // Shopping bag icon
+  const s=sz*0.30, bx=cx-s/2, by=cy+s*0.05;
+  ctx.fillStyle='#fff';
+  ctx.beginPath(); ctx.roundRect(bx, by, s, s*0.68, sz*0.04); ctx.fill();
+  ctx.strokeStyle='#fff'; ctx.lineWidth=sz*0.045; ctx.lineCap='round';
+  ctx.beginPath(); ctx.arc(cx, by-sz*0.005, s*0.24, Math.PI, 0); ctx.stroke();
+  // Text
+  ctx.fillStyle='#10b981';
+  ctx.font=`800 ${sz*0.095}px -apple-system,sans-serif`;
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('ShopPOS', sz/2, sz*0.80);
+  ctx.fillStyle='rgba(255,255,255,0.4)';
+  ctx.font=`600 ${sz*0.055}px sans-serif`;
+  ctx.fillText('ZhenchStacks', sz/2, sz*0.90);
+}
+['c192','c512','prev'].forEach((id,i) => drawIcon(document.getElementById(id),[192,512,192][i]));
+function dl(id, name) {
+  const a=document.createElement('a'); a.href=document.getElementById(id).toDataURL('image/png');
+  a.download=name; a.click();
+}
+</script>
+</body></html>

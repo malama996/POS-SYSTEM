@@ -718,7 +718,7 @@ const FB={apiKey: "AIzaSyCNJDhEnnTu7bwbSv7F0loK_o138Xm8Xyw",
   measurementId: "G-XWDQ302GFK"};
 let db=null,fbOn=false,fbUser=null;
 function initFB(){
-  if(!FB.apiKey)return;
+  if(typeof firebase==='undefined'||!FB.apiKey)return;
   try{
     if(!firebase.apps.length)firebase.initializeApp(FB);
     db=firebase.firestore();
@@ -829,7 +829,7 @@ let ST={
 };
 function persist(){
   ST=sanitizeState(ST);ensureOwnerAccess();
-  try{localStorage.setItem(SK,JSON.stringify(ST));}catch(e){}
+  try{localStorage.setItem(SK,JSON.stringify(ST));}catch(e){console.warn('Storage error:',e);toast('Warning: Local storage full!');}
   clearTimeout(persist._t);
   persist._t=setTimeout(cloudPush,2500);
 }
@@ -1023,7 +1023,7 @@ function switchPosTab(w){
 let cart=[],payMode='cash',activeCat='All',editProdId=null;
 function renderPOS(){
   const cats=['All',...new Set(ST.products.map(p=>p.cat))];
-  document.getElementById('cat-strip').innerHTML=cats.map(c=>`<div class="cat-chip${c===activeCat?' active':''}" onclick="setCat('${c}')">${c==='All'?'🔢 All':categoryLabel(c)}</div>`).join('');
+  document.getElementById('cat-strip').innerHTML=cats.map(c=>`<div class="cat-chip${c===activeCat?' active':''}" onclick="setCat('${esc(c).replace(/'/g,"\\'")}')">${c==='All'?'🔢 All':categoryLabel(c)}</div>`).join('');
   const filtered=activeCat==='All'?ST.products:ST.products.filter(p=>p.cat===activeCat);
   document.getElementById('prod-grid').innerHTML=filtered.map(p=>{
     const out=p.qty<=0,low=!out&&p.qty<=(p.low||5);
@@ -1113,29 +1113,35 @@ function completeSale(){
   const gvn=payMode==='cash'?parseFloat(document.getElementById('cash-in').value)||0:0;
   if(payMode==='cash'&&gvn<tot){toast('Enter cash received (at least the total)');return;}
   completeSale._busy=true;
-  const sale={
-    id:Date.now(),time:new Date().toISOString(),items:cart.map(c=>({...c})),
-    total:tot,subtotal:tot,payment:payMode,cashier:ST.settings.currentCashier,
-    cashTendered:gvn,changeGiven:gvn>0?Math.max(0,gvn-tot):0,
-    customerName:document.getElementById('cust-name').value.trim(),
-    customerPhone:document.getElementById('cust-phone').value.trim(),
-    customNote:document.getElementById('cust-note').value.trim(),
-    shopId:ST.settings.shopId
-  };
-  sale.items.forEach(ci=>{if(!ci.isManual){const p=ST.products.find(x=>x.id===ci.id);if(p)p.qty=Math.max(0,p.qty-ci.qty);}});
-  ST.sales.unshift(sale);
-  addAudit('SALE',`${fmt(sale.total)} — ${sale.items.length} item(s) — ${payMode}`,sale.cashier);
-  persist();curSale=sale;showReceipt(sale);
-  clearCart();['cust-name','cust-phone','cust-note'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
-  renderPOS();updCM();toast('Sale complete — '+fmt(sale.total));
-  setTimeout(()=>completeSale._busy=false,400);
+  try{
+    const sale={
+      id:Date.now(),time:new Date().toISOString(),items:cart.map(c=>({...c})),
+      total:tot,subtotal:tot,payment:payMode,cashier:ST.settings.currentCashier,
+      cashTendered:gvn,changeGiven:gvn>0?Math.max(0,gvn-tot):0,
+      customerName:document.getElementById('cust-name').value.trim(),
+      customerPhone:document.getElementById('cust-phone').value.trim(),
+      customNote:document.getElementById('cust-note').value.trim(),
+      shopId:ST.settings.shopId
+    };
+    sale.items.forEach(ci=>{if(!ci.isManual){const p=ST.products.find(x=>x.id===ci.id);if(p)p.qty=Math.max(0,p.qty-ci.qty);}});
+    ST.sales.unshift(sale);
+    addAudit('SALE',`${fmt(sale.total)} — ${sale.items.length} item(s) — ${payMode}`,sale.cashier);
+    persist();curSale=sale;showReceipt(sale);
+    clearCart();['cust-name','cust-phone','cust-note'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+    renderPOS();updCM();toast('Sale complete — '+fmt(sale.total));
+  }catch(err){
+    console.error('Sale error:',err);
+    toast('Error completing sale');
+  }finally{
+    setTimeout(()=>completeSale._busy=false,400);
+  }
 }
 
 // ── STOCK ─────────────────────────────────────────
 let stCat='All';
 function renderStock(srch=''){
   const cats=['All',...new Set(ST.products.map(p=>p.cat))];
-  document.getElementById('stock-cats').innerHTML=cats.map(c=>`<div class="cat-chip${c===stCat?' active':''}" style="padding:5px 10px;font-size:11px" onclick="setStCat('${c}')">${c==='All'?'🔢 All':categoryLabel(c)}</div>`).join('');
+  document.getElementById('stock-cats').innerHTML=cats.map(c=>`<div class="cat-chip${c===stCat?' active':''}" style="padding:5px 10px;font-size:11px" onclick="setStCat('${esc(c).replace(/'/g,"\\'")}')">${c==='All'?'🔢 All':categoryLabel(c)}</div>`).join('');
   let list=ST.products;
   if(srch)list=list.filter(p=>p.name.toLowerCase().includes(srch.toLowerCase()));
   if(stCat!=='All')list=list.filter(p=>p.cat===stCat);
@@ -1253,30 +1259,6 @@ function saveProd(){
 }
 
 // ── QR LABELS ─────────────────────────────────────
-function makeQRCanvas(text, size) {
-  // Pure canvas QR using qrcode.js library
-  const div = document.createElement('div');
-  div.style.cssText = 'position:absolute;left:-9999px;top:-9999px';
-  document.body.appendChild(div);
-  let cvs = null;
-  try {
-    new QRCode(div, {text, width:size, height:size, colorDark:'#000000', colorLight:'#ffffff', correctLevel:QRCode.CorrectLevel.H});
-    cvs = div.querySelector('canvas');
-    if (!cvs) {
-      // fallback: img element from qrcode.js
-      const img = div.querySelector('img');
-      if (img) {
-        const c = document.createElement('canvas');
-        c.width = size; c.height = size;
-        c.getContext('2d').drawImage(img, 0, 0, size, size);
-        cvs = c;
-      }
-    }
-  } catch(e) { console.log('QR error:', e); }
-  document.body.removeChild(div);
-  return cvs;
-}
-
 function showQR(id) {
   if(!requireRole('admin','supervisor'))return;
   const p = ST.products.find(x => x.id === id);
@@ -1332,7 +1314,6 @@ function showQR(id) {
       colorLight: '#ffffff',
       correctLevel: QRCode.CorrectLevel.H
     });
-    // Wait for QR to render then check
     setTimeout(() => {
       const img = qrDiv.querySelector('img');
       const canvas = qrDiv.querySelector('canvas');
@@ -1351,7 +1332,18 @@ function printLabel() {
   const label = document.getElementById('qr-print-label');
   if (!label) { toast('No label to print'); return; }
 
-  // Clone label into a print window
+  const clone = label.cloneNode(true);
+  const origCanvas = label.querySelector('canvas');
+  if (origCanvas) {
+    const cloneCanvas = clone.querySelector('canvas');
+    if (cloneCanvas) {
+      const img = document.createElement('img');
+      img.src = origCanvas.toDataURL('image/png');
+      img.style.cssText = 'width:130px;height:130px;margin:0 auto;display:block;';
+      cloneCanvas.parentNode.replaceChild(img, cloneCanvas);
+    }
+  }
+
   const win = window.open('', '_blank', 'width=400,height=500');
   if (!win) { toast('Allow popups to print'); window.print(); return; }
 
@@ -1363,8 +1355,8 @@ function printLabel() {
       border-radius: 6px; display: inline-block; text-align: center; max-width: 70mm; }
     img, canvas { display: block; margin: 6px auto; }
   </style></head><body>
-  <div class="label">${label.innerHTML}</div>
-  <script>setTimeout(() => { window.print(); window.close(); }, 800);<\/script>
+  <div class="label">${clone.innerHTML}</div>
+  <script>setTimeout(() => { window.print(); window.close(); }, 500);<\/script>
   </body></html>`);
   win.document.close();
 }
@@ -1460,6 +1452,7 @@ ${dd}
 }
 function closeReceipt(){document.getElementById('receipt-ov').classList.remove('open');}
 async function savePDF(){
+  if(!curSale){toast('No receipt to save');return;}
   toast('Generating PDF…');
   try{
     const el=document.getElementById('rbox');
@@ -1489,7 +1482,7 @@ async function sendWA(){
     `👤 Cashier: ${sale.cashier||'Staff'}`,
     sale.customerName?`🛒 Customer: ${sale.customerName}`:'',
     '','─────────────────',
-    ...sale.items.map(i=>`• ${i.name}\n  ${i.qty} ${i.unit} @ ${fmt(i.price)} = *${fmt(i.qty*i.price)}*`),
+    ...sale.items.map(i=>`• ${i.name}\n  ${i.qty} ${i.unit||'unit(s)'} @ ${fmt(i.price)} = *${fmt(i.qty*i.price)}*`),
     '─────────────────',
     isVAT?`Net: ${fmt(sale.total-vatAmt)}`:'',
     isVAT?`VAT @ ${vatR}%: ${fmt(vatAmt)}`:'',
@@ -1629,7 +1622,7 @@ function renderCredit(){
         <div style="font-size:18px;font-weight:800;color:${c.paid?'var(--accent)':'var(--danger)'}">${c.paid?'✓ Paid':fmt(c.amount)}</div>
         <div style="display:flex;gap:5px;margin-top:5px;justify-content:flex-end;flex-wrap:wrap">
           ${!c.paid?`<button class="btn btn-primary btn-sm" onclick="markPaid(${i})">Paid</button>`:''}
-          ${c.phone&&!c.paid?`<button class="btn btn-ghost btn-sm" onclick="crRemind('${c.name}','${c.phone}',${c.amount})">Remind</button>`:''}
+          ${c.phone&&!c.paid?`<button class="btn btn-ghost btn-sm" onclick="crRemind('${esc(c.name).replace(/'/g,"\\'")}' ,'${esc(c.phone)}',${c.amount})">Remind</button>`:''}
           <button class="btn btn-danger btn-sm" onclick="delCredit(${i})">Del</button>
         </div>
       </div>
@@ -1859,21 +1852,13 @@ function renderMore(){
     zraBadge.textContent=has?'✓ Active':'Setup';
     zraBadge.className='badge '+(has?'bg-green':'bg-yellow');
   }
-  const cloudDot=document.getElementById('cloud-dot');
-  if(cloudDot) cloudDot.style.background=fbOn?'#10b981':'#64748b';
+  const syncBadge=document.getElementById('sync-lbl2');
+  if(syncBadge){
+    syncBadge.textContent=fbOn?'Synced ✓':'Offline';
+    syncBadge.className='badge '+(fbOn?'bg-green':'bg-yellow');
+  }
   const cloudSub=document.getElementById('cloud-sub');
   if(cloudSub) cloudSub.textContent=fbOn?'Firebase synced ✓':'Configure Firebase for backup';
-}
-function openShopSettings(){
-  const S=ST.settings,tog=S.receiptToggles||{};
-  document.getElementById('s-name').value=S.shopName||'';document.getElementById('s-addr').value=S.shopAddr||'';
-  document.getElementById('s-phone').value=S.shopPhone||'';document.getElementById('s-email').value=S.shopEmail||'';
-  document.getElementById('s-tpin').value=S.tpin||'';document.getElementById('s-branch').value=S.branchId||'';
-  document.getElementById('s-mrc').value=S.mrcNo||'';document.getElementById('s-sdc').value=S.sdcId||'';
-  document.getElementById('s-taxtype').value=S.taxType||'none';document.getElementById('s-vatrate').value=S.vatRate||'16';
-  document.getElementById('s-footer').value=S.receiptMsg||'';document.getElementById('s-subhdr').value=S.receiptSubheader||'';
-  ['tpin','mrc','sdc','tax','sig','qr','cashier','change','units','cust'].forEach(f=>{const el=document.getElementById('rt-'+f);if(el)el.checked=tog[f]!==false;});
-  openOV('shop-ov');
 }
 function saveShopSettings(){
   if(!requireRole('admin'))return;
@@ -1981,15 +1966,52 @@ function sendDailyReport(){
 }
 
 // SCAN
-let scanStrm=null;
+let scanStrm=null, scanAnim=null;
 function openScan(){
   if(!requireRole('admin','supervisor'))return;
   document.getElementById('scan-ov').classList.add('open');
   navigator.mediaDevices?.getUserMedia({video:{facingMode:'environment'}})
-    .then(s=>{scanStrm=s;document.getElementById('scan-vid').srcObject=s;})
+    .then(s=>{
+      scanStrm=s;
+      const vid=document.getElementById('scan-vid');
+      vid.srcObject=s;
+      if('BarcodeDetector' in window){
+        const detector=new BarcodeDetector({formats:['qr_code','ean_13','ean_8','code_128','code_39','upc_a','upc_e']});
+        const processFrame=()=>{
+          if(!scanStrm)return;
+          detector.detect(vid).then(barcodes=>{
+            if(barcodes.length>0){
+              const code=barcodes[0].rawValue;
+              closeScan();
+              handleScannedCode(code);
+            }else{
+              scanAnim=requestAnimationFrame(processFrame);
+            }
+          }).catch(()=>scanAnim=requestAnimationFrame(processFrame));
+        };
+        vid.onloadedmetadata=()=>scanAnim=requestAnimationFrame(processFrame);
+      }else{
+        toast('Camera active. Point at barcode.');
+      }
+    })
     .catch(()=>{toast('Camera not available');closeScan();});
 }
-function closeScan(){if(scanStrm){scanStrm.getTracks().forEach(t=>t.stop());scanStrm=null;}document.getElementById('scan-ov').classList.remove('open');}
+function handleScannedCode(code){
+  const match=ST.products.find(p=>p.barcode===code||p.id===code||code.includes(p.id));
+  if(match){
+    addToCart(match.id);
+    toast(`Found & added: ${match.name}`);
+  }else{
+    const srch=document.getElementById('stock-srch');
+    if(srch){srch.value=code;renderStock(code);goTab('stock');}
+    toast(`Scanned: ${code}`);
+  }
+}
+function closeScan(){
+  if(scanAnim)cancelAnimationFrame(scanAnim);
+  if(scanStrm){scanStrm.getTracks().forEach(t=>t.stop());scanStrm=null;}
+  document.getElementById('scan-ov').classList.remove('open');
+}
 
 // OVERLAYS
 function openOV(id){

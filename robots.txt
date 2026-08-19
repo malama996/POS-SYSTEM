@@ -1,0 +1,6 @@
+# robots.txt for ShopPOS — ZhenchStacks
+User-agent: *
+Allow: /
+
+# Sitemap Location for Search Engine Crawlers
+Sitemap: https://shoppos.app/sitemap.xml

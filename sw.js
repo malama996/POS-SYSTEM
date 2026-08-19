@@ -1,6 +1,6 @@
-// ShopPOS Service Worker v3.0 — ZhenchStacks
+// ShopPOS Service Worker v3.1 — ZhenchStacks
 
-const CACHE = 'shoppos-v15';
+const CACHE = 'shoppos-v16';
 
 const OFFLINE_URLS = [
   '/index.html',
@@ -8,6 +8,8 @@ const OFFLINE_URLS = [
   '/app.js',
   '/manifest.json',
   '/offline.html',
+  '/sitemap.xml',
+  '/robots.txt',
 
   // CDN Libraries (fixed URLs)
   'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js',

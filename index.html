@@ -119,57 +119,64 @@
               </div>
               <button class="btn btn-ghost btn-sm" onclick="clearCart()">Clear</button>
             </div>
-            <div class="citems" id="citems">
-              <div class="empty-st" style="padding:20px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg><p>Tap products to add to order</p></div>
+
+            <!-- Scrollable middle container for cart items and options -->
+            <div class="cart-scroll-body">
+              <div class="citems" id="citems">
+                <div class="empty-st" style="padding:20px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg><p>Tap products to add to order</p></div>
+              </div>
+              <div class="cfooter">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+                  <input class="cinput" type="text" id="cust-name" placeholder="Customer name">
+                  <input class="cinput" type="tel" id="cust-phone" placeholder="WhatsApp: 260…">
+                </div>
+                <input class="cinput" type="text" id="cust-note" placeholder="Receipt note / reference (optional)">
+                <div class="man-row">
+                  <input class="cinput" type="text" id="man-name" placeholder="Manual item name">
+                  <input class="cinput" type="number" id="man-price" placeholder="K price">
+                  <button class="btn btn-secondary btn-sm" onclick="addManual()">+ Add</button>
+                </div>
+
+                <!-- Discount percentage field -->
+                <div class="disc-row">
+                  <span style="font-size:12px;color:var(--text2);font-weight:700">Discount (%):</span>
+                  <input class="disc-input" type="number" id="cart-disc" placeholder="0" min="0" max="100" oninput="applyDiscount(this.value)">
+                  <span style="font-size:11px;color:var(--text3);margin-left:auto">Applied to total</span>
+                </div>
+
+                <!-- Payment buttons -->
+                <div class="pay-row">
+                  <button class="paybtn scash" id="pb-cash" onclick="selPay('cash')">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="6" width="20" height="12" rx="2"/></svg> Cash
+                  </button>
+                  <button class="paybtn" id="pb-mob" onclick="selPay('mobile')">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg> Mobile
+                  </button>
+                  <button class="paybtn" id="pb-split" onclick="selPay('split')">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M9 21H4v-5"/></svg> Split
+                  </button>
+                </div>
+
+                <div id="cash-sec">
+                  <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+                    <span style="font-size:11px;color:var(--text3);font-weight:700;white-space:nowrap">Tendered (K)</span>
+                    <input class="cinput" type="number" id="cash-in" placeholder="0.00" style="flex:1" oninput="calcChange()">
+                  </div>
+                  <div class="qamts" id="qamts"></div>
+                  <div id="chg-ok" class="chg-ok" style="display:none;margin-top:6px">
+                    <span style="font-size:12px;color:var(--text2)">Change to give:</span>
+                    <span style="font-size:17px;font-weight:900;color:var(--accent)" id="chg-val">K0.00</span>
+                  </div>
+                  <div id="chg-err" class="chg-err" style="display:none;margin-top:6px">
+                    <span style="font-size:12px;color:var(--danger)">Short by:</span>
+                    <span style="font-size:15px;font-weight:900;color:var(--danger)" id="chg-short">K0.00</span>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div class="cfooter">
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-                <input class="cinput" type="text" id="cust-name" placeholder="Customer name">
-                <input class="cinput" type="tel" id="cust-phone" placeholder="WhatsApp: 260…">
-              </div>
-              <input class="cinput" type="text" id="cust-note" placeholder="Receipt note / reference (optional)">
-              <div class="man-row">
-                <input class="cinput" type="text" id="man-name" placeholder="Manual item name">
-                <input class="cinput" type="number" id="man-price" placeholder="K price">
-                <button class="btn btn-secondary btn-sm" onclick="addManual()">+ Add</button>
-              </div>
 
-              <!-- Discount percentage field -->
-              <div class="disc-row">
-                <span style="font-size:12px;color:var(--text2);font-weight:700">Discount (%):</span>
-                <input class="disc-input" type="number" id="cart-disc" placeholder="0" min="0" max="100" oninput="applyDiscount(this.value)">
-                <span style="font-size:11px;color:var(--text3);margin-left:auto">Applied to total</span>
-              </div>
-
-              <!-- Payment buttons -->
-              <div class="pay-row">
-                <button class="paybtn scash" id="pb-cash" onclick="selPay('cash')">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="6" width="20" height="12" rx="2"/></svg> Cash
-                </button>
-                <button class="paybtn" id="pb-mob" onclick="selPay('mobile')">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg> Mobile
-                </button>
-                <button class="paybtn" id="pb-split" onclick="selPay('split')">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M9 21H4v-5"/></svg> Split
-                </button>
-              </div>
-
-              <div id="cash-sec">
-                <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
-                  <span style="font-size:11px;color:var(--text3);font-weight:700;white-space:nowrap">Tendered (K)</span>
-                  <input class="cinput" type="number" id="cash-in" placeholder="0.00" style="flex:1" oninput="calcChange()">
-                </div>
-                <div class="qamts" id="qamts"></div>
-                <div id="chg-ok" class="chg-ok" style="display:none;margin-top:6px">
-                  <span style="font-size:12px;color:var(--text2)">Change to give:</span>
-                  <span style="font-size:17px;font-weight:900;color:var(--accent)" id="chg-val">K0.00</span>
-                </div>
-                <div id="chg-err" class="chg-err" style="display:none;margin-top:6px">
-                  <span style="font-size:12px;color:var(--danger)">Short by:</span>
-                  <span style="font-size:15px;font-weight:900;color:var(--danger)" id="chg-short">K0.00</span>
-                </div>
-              </div>
-
+            <!-- PERMANENTLY STICKY CHECKOUT FOOTER BAR -->
+            <div class="cart-sticky-checkout">
               <div class="total-row">
                 <span style="font-size:13px;color:var(--text2)" id="item-cnt">0 items</span>
                 <div><span style="font-size:11px;color:var(--text3)">TOTAL (ZMW) </span><span style="font-size:22px;font-weight:900;color:#fff" id="cart-total">K0.00</span></div>

@@ -1,9 +1,11 @@
-// ShopPOS Service Worker v2.1 — ZhenchStacks
+// ShopPOS Service Worker v3.0 — ZhenchStacks
 
-const CACHE = 'shoppos-v14';
+const CACHE = 'shoppos-v15';
 
 const OFFLINE_URLS = [
   '/index.html',
+  '/styles.css',
+  '/app.js',
   '/manifest.json',
   '/offline.html',
 
